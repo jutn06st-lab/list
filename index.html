@@ -849,18 +849,37 @@ function nxExtra(){const X=NX.x,f=[],L=[];if(!X)return{f,L,pre:[],post:[]};const
  const tm=(D.pages.terms||'').trim();
  if(tm){f.push(['所持リスト/利用上の注意.md','# 利用上の注意\n\n'+nxPr(tm)+'\n']);post.push(nxLk('利用上の注意',null,'所持リスト/'))}
  return{f,pre,post}}
-function nxPlain(r){const X=NX;let o='';
- r.forEach(i=>{const cast=X.p&&i.w.length?'（'+wSort(i.w).join('、')+'）':'',meta=[X.q&&i.q?'画質:'+i.q:'',X.rc&&i.r?'比率:'+ratF(i.r):'',X.o&&i.o?i.o+(i.m?'（'+i.m+'）':''):''].filter(Boolean).join(' ／ ');
-  o+=`・${i.t}${cast}${meta?'　'+meta:''}\n`;
-  if(X.n){const m=nxCl(i.n);if(m)o+=`　メモ：${m}\n`}
-  if(X.l)nxLinks(i).forEach(l=>{o+=`　${l.u}\n`});
-  if(X.k)nxKs(i).forEach(t=>{o+=`　- ${t}\n`})});
- return o}
-function nxNote(){const{A,G}=nxGroups(),X=NX.x;let o=`所持リスト\n全${A.length}件 ／ ${nxDt()} 時点\n`;
- if(X&&(D.notice||'').trim())o+='\n■ お知らせ\n\n'+nxPr(D.notice)+'\n';
- G.filter(x=>x[0]!='New').forEach(([g,r])=>{o+=`\n■ ${g}（${r.length}）\n\n`+nxPlain(r)});
- if(X){const tm=(D.pages.terms||'').trim();if(tm)o+='\n■ 利用上の注意\n\n'+nxPr(tm)+'\n'}
- return o}
+/* ===== note用 ===== */
+let NO={m:'g',p:true,q:true,r:true,n:true,dt:false,k:false,l:false,ln:false,x:false,c:true};
+function noMain(){const gk=Object.keys(D.groups);return MAING.map(m=>gk.find(g=>g.trim()==m)||m)}
+function noIn(i,g){return i.w.some(w=>w==g||desc(g).has(w))}
+function noSecs(){const{G}=nxGroups(),X=NO,gs=G.filter(x=>x[0]!='New'),lk=r=>X.ln?r.filter(hasLk):r;
+ if(X.m=='g')return gs.map(([g,r])=>({h:g,sub:null,rows:lk(r)})).filter(s=>s.rows.length);
+ const M=noMain(),out=M.map((m,x)=>({h:MAING[x],subs:gs.map(([g,r])=>[g,lk(r.filter(i=>noIn(i,m)))]).filter(a=>a[1].length)}));
+ out.push({h:'その他',subs:gs.map(([g,r])=>[g,lk(r.filter(i=>!M.some(m=>noIn(i,m))))]).filter(a=>a[1].length)});
+ return out.filter(s=>s.subs.length)}
+function noLine(i){const X=NO,cast=X.p&&i.w.length?'（'+wSort(i.w).join('、')+'）':'',meta=[X.q&&i.q?'画質:'+i.q:'',X.r&&i.r?'比率:'+ratF(i.r):''].filter(Boolean).join(' ／ ');
+ let o=`・${X.dt&&i.dt?i.dt.replace(/-/g,'.')+' ':''}${i.t}${cast}${meta?'　'+meta:''}\n`;
+ if(X.n){const m=nxCl(i.n);if(m)o+=`　メモ：${m}\n`}
+ if(X.l)nxLinks(i).forEach(l=>{o+=`　${l.u}\n`});
+ if(X.k)nxKs(i).forEach(t=>{o+=`　- ${t}\n`});return o}
+const noCnt=n=>NO.c?'（'+n+'）':'',noRows=r=>r.map(noLine).join('');
+function noText(s){let o='';if(s.rows)o=`■ ${s.h}${noCnt(s.rows.length)}\n\n`+noRows(s.rows);else{o=`◆ ${s.h}\n`;s.subs.forEach(([g,r])=>o+=`\n■ ${g}${noCnt(r.length)}\n\n`+noRows(r))}return o}
+function noHead(){const X=NO,A=nxData().A.filter(i=>!X.ln||hasLk(i));let o=`所持リスト\n全${A.length}件 ／ ${nxDt()} 時点\n`;if(X.x&&(D.notice||'').trim())o+='\n■ お知らせ\n\n'+nxPr(D.notice)+'\n';return o}
+function noAll(){const S=noSecs();let o=noHead();S.forEach(s=>o+='\n'+noText(s));if(NO.x){const tm=(D.pages.terms||'').trim();if(tm)o+='\n■ 利用上の注意\n\n'+nxPr(tm)+'\n'}return o}
+function noSheet(){const ck=(k,t)=>`<label style="display:flex;align-items:center;gap:8px;margin:6px 0;color:inherit;font-size:14px"><input type="checkbox" data-nto="${k}" ${NO[k]?'checked':''} style="width:auto;min-height:0"> ${t}</label>`;
+ sheet(`${xbtn()}<h2>noteに貼り付け</h2><p class="hint" style="line-height:1.8">noteの記事にそのまま貼れる文章を作ります。全体を1回で貼るか、下の一覧から見出しごとにコピーして記事を分けられます。</p>
+ <div class="row"><button data-ntm="g" class="${NO.m=='g'?'on':''}">ジャンルごと</button><button data-ntm="gr" class="${NO.m=='gr'?'on':''}">グループごと（なにわ男子・SixTONES・その他）</button></div>
+ <p class="hint" id="nth"></p>
+ ${ck('c','見出しに件数を付ける')}${ck('p','出演者')}${ck('q','画質')}${ck('r','比率')}${ck('dt','日付')}${ck('n','メモ')}${ck('k','収録内容（作品の下に表示）')}${ck('l','共有リンク（記事を公開する場合は注意）')}${ck('ln','リンクがある作品だけにする')}${ck('x','お知らせ・利用上の注意も入れる')}
+ <div id="nts"></div>
+ <textarea id="nto" readonly style="width:100%;min-height:36vh;margin-top:8px;font-size:12px;line-height:1.5"></textarea><p class="hint" id="ntc"></p>
+ <div class="row"><button class="on" data-a="ntcp">全体をコピー</button><button data-a="ntdl">ファイルで保存</button></div>`);noUp()}
+function noUp(){const t=noAll(),el=$('#nto');if(!el)return;el.value=t;$('#ntc').textContent=t.length.toLocaleString()+'文字';
+ document.querySelectorAll('[data-ntm]').forEach(b=>b.classList.toggle('on',b.dataset.ntm==NO.m));
+ const S=noSecs();window.__noS=S;$('#nts').innerHTML=S.length?'<p class="hint" style="margin-top:12px">見出しごとにコピー</p>'+S.map((s,x)=>`<div class="row" style="margin:4px 0;align-items:center"><span style="flex:1;min-width:0">${e(s.h)}<small class="hint"> ${s.rows?s.rows.length:s.subs.reduce((a,b)=>a+b[1].length,0)}件</small></span><button data-ntc="${x}">コピー</button></div>`).join(''):'<p class="hint">該当する作品がありません</p>'}
+async function noWrite(t,m){let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(x){const el=$('#nto');if(el){try{const ro=el.readOnly;el.readOnly=false;el.value=t;el.focus();el.setSelectionRange(0,t.length);ok=document.execCommand('copy');el.readOnly=ro;noUp()}catch(y){}}}toast(ok?(m||'コピーしました。noteの記事に貼り付けてください'):'コピーできませんでした。枠の中を長押しして「すべてを選択→コピー」してください')}
+function noDl(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([noAll()],{type:'text/plain;charset=utf-8'}));a.download='note-所持リスト-'+new Date().toISOString().slice(0,10)+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 function nxTop(){const{A,G}=nxGroups(),E=nxExtra();return`# 所持リスト\n\nそれぞれのジャンルにて整理してあります。\n\n${[...E.pre,...G.map(([g,r])=>nxLk(g,r.length,'所持リスト/')),...E.post].join('\n')}\n\n---\n\n全${A.length}件 ／ ${nxDt()} 時点\n`}
 function nxMd(){const{A,G}=nxGroups(),X=NX.x;let o=`# 所持リスト\n\n全${A.length}件 ／ ${nxDt()} 時点\n`+(rcLeg()?'\n'+rcLeg():'');
  if(X){if((D.notice||'').trim())o+='\n## お知らせ\n\n'+nxPr(D.notice)+'\n';
@@ -880,25 +899,25 @@ function nxZip(files){const te=new TextEncoder(),T=(()=>{const t=[];for(let n=0;
 function nxCsv(){const{A,gs}=nxData(),q=t=>'"'+String(t==null?'':t).replace(/"/g,'""')+'"',H=['タイトル','ジャンル','出演者','画質','配布可否','配布方法','メモ','収録件数','収録内容','リンク'];
  const rows=[];gs.forEach(g=>A.filter(i=>gOf(i).includes(g)).forEach(i=>rows.push([i.t,g,wSort(i.w).join(', '),i.q||'',i.o||'',i.m||'',nxCl(i.n),i.k.length,nxKs(i).join('\n'),NX.l?nxLinks(i).map(l=>l.u).join('\n'):''])));
  return'﻿'+[H,...rows].map(r=>r.map(q).join(',')).join('\r\n')}
-const nxOut=()=>NX.f=='csv'?nxCsv():NX.f=='note'?nxNote():(NX.f=='zip'||NX.f=='each')?nxTop():nxMd();
+const nxOut=()=>NX.f=='csv'?nxCsv():(NX.f=='zip'||NX.f=='each')?nxTop():nxMd();
 const nxEach=()=>nxFiles().map(([n,t],x)=>[x,n.replace(/\.md$/,'').split('/').pop(),t]);
 async function nxCopyT(t){let ok=await nxWrite(t);if(!ok){const el=$('#nxo');if(el){try{const ro=el.readOnly;el.readOnly=false;el.value=t;el.focus();el.setSelectionRange(0,t.length);ok=document.execCommand('copy');el.readOnly=ro;nxUp()}catch(x){}}}toast(ok?'コピーしました。Notionの子ページに貼り付けてください':'コピーできませんでした')}
 function nxSheet(){const ck=(k,t)=>`<label style="display:flex;align-items:center;gap:8px;margin:6px 0;color:inherit;font-size:14px"><input type="checkbox" data-nx="${k}" ${NX[k]?'checked':''} style="width:auto;min-height:0"> ${t}</label>`;
  sheet(`${xbtn()}<h2>Notionにまとめる</h2><p class="hint" style="line-height:1.8"><b>スマホで別ページにしたい</b>：「ジャンルごとに1つずつコピー」を選び、まずトップの内容をNotionに貼り、その中で「/ページ」で子ページを作って名前を付け、下の一覧から該当ジャンルの「コピー」→ 子ページに貼り付けます。<br><b>1ページにまとめる</b>：「1ページに貼り付け」を選んで「コピー」→ Notionの新しいページに貼り付けると、お知らせ・必読・ジャンルごとの一覧が見出し付きでまとまります。<br><b>PC</b>：「ジャンルごとのページ（ZIP）」を保存し、Notionの「設定 → インポート → テキスト＆Markdown」で選ぶと、ジャンルごとに別ページになります（スマホのアプリではZIPを取り込めません）。<br><b>CSV</b>：Notionの「インポート → CSV」でデータベースになります。</p>
- <div class="row"><button data-nxf="md" class="${NX.f=='md'?'on':''}">1ページに貼り付け（スマホ向け）</button><button data-nxf="each" class="${NX.f=='each'?'on':''}">ジャンルごとに1つずつコピー（スマホ向け）</button><button data-nxf="zip" class="${NX.f=='zip'?'on':''}">ジャンルごとのページ（ZIP・PC向け）</button><button data-nxf="csv" class="${NX.f=='csv'?'on':''}">CSV（データベース）</button><button data-nxf="note" class="${NX.f=='note'?'on':''}">noteに貼り付け</button></div>
- ${ck('x','お知らせ・利用上の注意もページにする（ZIPのみ）')}${ck('p','出演者')}${ck('q','画質')}${ck('n','メモ')}${ck('k','収録内容（作品の下にぶら下げて表示）')}${ck('l','共有リンク（Notionを他人に共有する場合は注意）')}${ck('ln','リンクがある作品だけにする')}${ck('rc','比率を文字の色で分ける（コピーすると文字に色が付く。note・CSVは色なし）')}
+ <div class="row"><button data-nxf="md" class="${NX.f=='md'?'on':''}">1ページに貼り付け（スマホ向け）</button><button data-nxf="each" class="${NX.f=='each'?'on':''}">ジャンルごとに1つずつコピー（スマホ向け）</button><button data-nxf="zip" class="${NX.f=='zip'?'on':''}">ジャンルごとのページ（ZIP・PC向け）</button><button data-nxf="csv" class="${NX.f=='csv'?'on':''}">CSV（データベース）</button></div>
+ ${ck('x','お知らせ・利用上の注意もページにする（ZIPのみ）')}${ck('p','出演者')}${ck('q','画質')}${ck('n','メモ')}${ck('k','収録内容（作品の下にぶら下げて表示）')}${ck('l','共有リンク（Notionを他人に共有する場合は注意）')}${ck('ln','リンクがある作品だけにする')}${ck('rc','比率を文字の色で分ける（コピーすると文字に色が付く。CSVは色なし）')}
  <div id="nxe"></div>
  <textarea id="nxo" readonly style="width:100%;min-height:36vh;margin-top:8px;font-size:12px;line-height:1.5"></textarea><p class="hint" id="nxc"></p>
  <div class="row"><button class="on" data-a="nxcp">コピー</button><button data-a="nxdl">ファイルで保存</button></div>
  <p class="hint">Notionへ自動で書き込む機能は、この公開サイト単体では安全に作れないため、貼り付け／取り込み方式にしています。</p>`);nxUp()}
 function nxUp(){const t=nxOut(),el=$('#nxo');if(!el)return;const ne=$('#nxe');if(ne)ne.innerHTML=NX.f=='each'?'<p class="hint">タップでそのページの中身をコピーします（上のトップページ＝最初の行）。</p>'+nxEach().map(a=>`<div class="row" style="margin:4px 0;align-items:center"><span style="flex:1;min-width:0">${e(a[1])}</span><button data-nxe="${a[0]}">コピー</button></div>`).join(''):'';el.value=t;$('#nxc').textContent=NX.f=='each'?'↑トップページの中身':NX.f=='zip'?'↑一番上のページの中身（各ジャンルは別ページになります：'+nxGroups().G.length+'ページ）':t.length.toLocaleString()+'文字';document.querySelectorAll('[data-nxf]').forEach(b=>b.classList.toggle('on',b.dataset.nxf==NX.f));document.querySelectorAll('[data-nx]').forEach(c=>{if(NX.f=='csv'&&['p','q','o','n'].includes(c.dataset.nx)){c.disabled=true;c.parentNode.style.opacity=.5}else{c.disabled=false;c.parentNode.style.opacity=1}})}
-async function nxCopy(){const t=(NX.f=='csv'?nxCsv():NX.f=='note'?nxNote():nxMd()).replace(/^﻿/,''),el=$('#nxo');let ok=await nxWrite(t);
+async function nxCopy(){const t=(NX.f=='csv'?nxCsv():nxMd()).replace(/^﻿/,''),el=$('#nxo');let ok=await nxWrite(t);
  if(!ok&&el){try{const ro=el.readOnly;el.readOnly=false;el.value=t;el.focus();el.setSelectionRange(0,t.length);ok=document.execCommand('copy');el.readOnly=ro;nxUp()}catch(x){}}
- toast(ok?(NX.f=='note'?'コピーしました。noteの記事に貼り付けてください':'コピーしました。Notionのページに貼り付けてください'):'コピーできませんでした。枠の中を長押しして「すべてを選択→コピー」してください')}
-function nxDl(){if(NX.f=='zip'){const a=document.createElement('a');a.href=URL.createObjectURL(nxZip(nxFiles()));a.download='notion-所持リスト-'+new Date().toISOString().slice(0,10)+'.zip';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);return}const c=NX.f=='csv',nt=NX.f=='note',a=document.createElement('a');a.href=URL.createObjectURL(new Blob([nxOut()],{type:c?'text/csv;charset=utf-8':nt?'text/plain;charset=utf-8':'text/markdown;charset=utf-8'}));a.download=(nt?'note-list-':'notion-list-')+new Date().toISOString().slice(0,10)+(c?'.csv':nt?'.txt':'.md');a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+ toast(ok?'コピーしました。Notionのページに貼り付けてください':'コピーできませんでした。枠の中を長押しして「すべてを選択→コピー」してください')}
+function nxDl(){if(NX.f=='zip'){const a=document.createElement('a');a.href=URL.createObjectURL(nxZip(nxFiles()));a.download='notion-所持リスト-'+new Date().toISOString().slice(0,10)+'.zip';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);return}const c=NX.f=='csv',a=document.createElement('a');a.href=URL.createObjectURL(new Blob([nxOut()],{type:c?'text/csv;charset=utf-8':'text/markdown;charset=utf-8'}));a.download='notion-list-'+new Date().toISOString().slice(0,10)+(c?'.csv':'.md');a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 function txtDl(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txtAll()],{type:'text/plain;charset=utf-8'}));a.download='list-'+new Date().toISOString().slice(0,10)+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 function adminMenu(){
- sheet(`${xbtn()}<h2>管理</h2>${!S?'':`<div class="row" style="margin-top:0"><button class="${ed?'on':''}" data-a="ed">${ed?'編集モード：ON（タップでOFF）':'編集モードにする'}</button><button data-a="txt">所持リストをテキストで出力</button><button data-a="dtb">日付をまとめて入れる</button><button data-a="nx">Notionにまとめる</button><button data-a="sh">所持リストの共有リンクをコピー</button><button data-a="sgs">ジャンル別の共有リンク</button><button data-a="shk">とれたて関ジュースのみの共有リンクをコピー</button><button data-a="lo">ログアウト</button></div>
+ sheet(`${xbtn()}<h2>管理</h2>${!S?'':`<div class="row" style="margin-top:0"><button class="${ed?'on':''}" data-a="ed">${ed?'編集モード：ON（タップでOFF）':'編集モードにする'}</button><button data-a="txt">所持リストをテキストで出力</button><button data-a="dtb">日付をまとめて入れる</button><button data-a="nx">Notionにまとめる</button><button data-a="nt">noteに貼り付け</button><button data-a="sh">所持リストの共有リンクをコピー</button><button data-a="sgs">ジャンル別の共有リンク</button><button data-a="shk">とれたて関ジュースのみの共有リンクをコピー</button><button data-a="lo">ログアウト</button></div>
  <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px"><input type="checkbox" data-lno style="width:auto;min-height:0"> 所持リストの共有リンクは「リンクがある作品だけ」にする</label>
  ${ed?`<div class="fg"><label>サイト名</label><input data-ti value="${e(D.title)}">
  <label>共有ページの補足（共有リンクの「使い方」で、イラストの下に表示。空欄なら何も出しません）</label><textarea data-pg="share" style="min-height:140px" placeholder="例：配布のお願い、お問い合わせ先など">${e((D.pages&&D.pages.share)||'')}</textarea>
@@ -1058,7 +1077,7 @@ document.addEventListener('click',async t=>{if(t.target.id=='sh'){closeSheet();r
  else if(d.a=='pw'){em=$('#em').value.trim();x.disabled=true;x.textContent='確認中…';try{const r=await sb('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:em,password:$('#pw').value})});if(r.ok){ses(await r.json());adminMenu();render()}else{let m='';try{const j=await r.json();m=j.error_description||j.msg||j.message||j.error||''}catch(z){}alert('ログインできません（'+r.status+'）'+(m?'\n'+m:''))}}catch(z){alert('通信に失敗しました')}if(x.isConnected){x.disabled=false;x.textContent='ログイン'}}
  else if(d.a=='lo'){out();closeSheet();render()}
  else if(d.a=='txt'){if(!VW)txtSheet()}
- else if(d.a=='nx')nxSheet();else if(d.a=='dtb')dtSheet();else if(d.a=='dtgo'){DTQ=$('#dtq').value;dtGo()}else if(d.nxf!==undefined){NX.f=d.nxf;nxUp()}else if(d.nx!==undefined){NX[d.nx]=x.checked;nxUp()}else if(d.nxe!==undefined){const a=nxEach()[+d.nxe];if(a)nxCopyT(a[2])}else if(d.a=='nxcp')nxCopy();else if(d.a=='nxdl')nxDl();else if(d.a=='txcp')txtCopy()
+ else if(d.a=='nx')nxSheet();else if(d.a=='nt')noSheet();else if(d.ntm!==undefined){NO.m=d.ntm;noUp()}else if(d.nto!==undefined){NO[d.nto]=x.checked;noUp()}else if(d.ntc!==undefined){const q=(window.__noS||[])[+d.ntc];if(q)noWrite(noText(q),'コピーしました：'+q.h)}else if(d.a=='ntcp')noWrite(noAll());else if(d.a=='ntdl')noDl();else if(d.a=='dtb')dtSheet();else if(d.a=='dtgo'){DTQ=$('#dtq').value;dtGo()}else if(d.nxf!==undefined){NX.f=d.nxf;nxUp()}else if(d.nx!==undefined){NX[d.nx]=x.checked;nxUp()}else if(d.nxe!==undefined){const a=nxEach()[+d.nxe];if(a)nxCopyT(a[2])}else if(d.a=='nxcp')nxCopy();else if(d.a=='nxdl')nxDl();else if(d.a=='txcp')txtCopy()
  else if(d.a=='txdl')txtDl()
  else if(d.txl!==undefined){TXO.w=d.txl=='1';txtSheet()}
  else if(d.tx!==undefined){TXO[d.tx]=x.checked;txtUp()}
